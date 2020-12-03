@@ -74,3 +74,42 @@ func TestMany2ManyWithDefaultValueUUID(t *testing.T) {
 		t.Errorf("Failed, got error: %v", err)
 	}
 }
+
+func TestCreateWithExplicitSerialPrimaryKeyAndSelfReferentialAssociation(t *testing.T) {
+	if DB.Dialector.Name() != "postgres" {
+		t.Skip()
+	}
+
+	type SmallSerial struct {
+		ID       uint16 `gorm:"type:smallserial;primaryKey"`
+		ParentID *uint16
+		Parent   *SmallSerial `gorm:"foreignKey:ParentID"`
+	}
+	type Serial struct {
+		ID       uint32 `gorm:"type:serial;primaryKey"`
+		ParentID *uint32
+		Parent   *Serial `gorm:"foreignKey:ParentID"`
+	}
+	type BigSerial struct {
+		ID       uint64 `gorm:"type:bigserial;primaryKey"`
+		ParentID *uint64
+		Parent   *BigSerial `gorm:"foreignKey:ParentID"`
+	}
+
+	tables := []interface{}{&SmallSerial{}, &Serial{}, &BigSerial{}}
+
+	DB.Migrator().DropTable(tables...)
+	if err := DB.AutoMigrate(tables...); err != nil {
+		t.Errorf("no error should happen when auto migrate, but got %v", err)
+	}
+
+	if err := DB.Create(&SmallSerial{}).Error; err != nil {
+		t.Errorf("no error should happen when creating SmallSerial with null parent id, but got %v", err)
+	}
+	if err := DB.Create(&Serial{}).Error; err != nil {
+		t.Errorf("no error should happen when creating SmallSerial with null parent id, but got %v", err)
+	}
+	if err := DB.Create(&BigSerial{}).Error; err != nil {
+		t.Errorf("no error should happen when creating SmallSerial with null parent id, but got %v", err)
+	}
+}

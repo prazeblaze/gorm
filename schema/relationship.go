@@ -439,8 +439,18 @@ func (schema *Schema) guessRelation(relation *Relationship, field *Field, gl gue
 
 	// build references
 	for idx, foreignField := range foreignFields {
-		// use same data type for foreign keys
-		foreignField.DataType = primaryFields[idx].DataType
+		// convert serial types to integer equivalents for foreign keys
+		switch primaryFields[idx].DataType {
+		case "smallserial":
+			foreignField.DataType = "smallint"
+		case "serial":
+			foreignField.DataType = "integer"
+		case "bigserial":
+			foreignField.DataType = "bigint"
+		default:
+			foreignField.DataType = primaryFields[idx].DataType
+		}
+
 		foreignField.GORMDataType = primaryFields[idx].GORMDataType
 		if foreignField.Size == 0 {
 			foreignField.Size = primaryFields[idx].Size
